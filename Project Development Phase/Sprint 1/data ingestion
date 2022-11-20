@@ -1,0 +1,32 @@
+# Data ingestion - reading the datasets from Azure blob 
+!wget http://azuremlsamples.azureml.net/templatedata/PM_train.txt 
+!wget http://azuremlsamples.azureml.net/templatedata/PM_test.txt
+!wget http://azuremlsamples.azureml.net/templatedata/PM_truth.txt 
+
+
+# read training data 
+train_df = pd.read_csv('PM_train.txt', sep=" ", header=None)
+train_df.drop(train_df.columns[[26, 27]], axis=1, inplace=True)
+train_df.columns = ['id', 'cycle', 'setting1', 'setting2', 'setting3', 's1', 's2', 's3',
+                     's4', 's5', 's6', 's7', 's8', 's9', 's10', 's11', 's12', 's13', 's14',
+                     's15', 's16', 's17', 's18', 's19', 's20', 's21']
+                     
+                     
+                     
+                     
+# read test data
+test_df = pd.read_csv('PM_test.txt', sep=" ", header=None)
+test_df.drop(test_df.columns[[26, 27]], axis=1, inplace=True)
+test_df.columns = ['id', 'cycle', 'setting1', 'setting2', 'setting3', 's1', 's2', 's3',
+                     's4', 's5', 's6', 's7', 's8', 's9', 's10', 's11', 's12', 's13', 's14',
+                     's15', 's16', 's17', 's18', 's19', 's20', 's21']
+                     
+     
+     
+# read ground truth data
+truth_df = pd.read_csv('PM_truth.txt', sep=" ", header=None)
+truth_df.drop(truth_df.columns[[1]], axis=1, inplace=True)
+
+
+train_df = train_df.sort_values(['id','cycle'])
+train_df.head()
