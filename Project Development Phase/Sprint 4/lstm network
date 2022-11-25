@@ -1,0 +1,86 @@
+# build the network
+nb_features = seq_array.shape[2]
+nb_out = label_array.shape[1]
+
+model = Sequential()
+
+model.add(LSTM(
+         input_shape=(sequence_length, nb_features),
+         units=100,
+         return_sequences=True))
+model.add(Dropout(0.2))
+
+model.add(LSTM(
+          units=50,
+          return_sequences=False))
+model.add(Dropout(0.2))
+
+model.add(Dense(units=nb_out, activation='sigmoid'))
+model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
+
+print(model.summary())
+
+%%time
+# fit the network
+model.fit(seq_array, label_array, epochs=10, batch_size=200, validation_split=0.05, verbose=1,
+          callbacks = [keras.callbacks.EarlyStopping(monitor='val_loss', min_delta=0, patience=0, verbose=0, mode='auto')])
+          
+          
+# training metrics
+scores = model.evaluate(seq_array, label_array, verbose=1, batch_size=200)
+print('Accurracy: {}'.format(scores[1]))
+
+
+# make predictions and compute confusion matrix
+y_pred = model.predict_classes(seq_array,verbose=1, batch_size=200)
+y_true = label_array
+print('Confusion matrix\n- x-axis is true labels.\n- y-axis is predicted labels')
+cm = confusion_matrix(y_true, y_pred)
+cm
+
+# compute precision and recall
+precision = precision_score(y_true, y_pred)
+recall = recall_score(y_true, y_pred)
+print( 'precision = ', precision, '\n', 'recall = ', recall)
+
+
+
+seq_array_test_last = [test_df[test_df['id']==id][sequence_cols].values[-sequence_length:] 
+                       for id in test_df['id'].unique() if len(test_df[test_df['id']==id]) >= sequence_length]
+
+seq_array_test_last = np.asarray(seq_array_test_last).astype(np.float32)
+seq_array_test_last.shape
+
+
+y_mask = [len(test_df[test_df['id']==id]) >= sequence_length for id in test_df['id'].unique()]
+
+label_array_test_last = test_df.groupby('id')['label1'].nth(-1)[y_mask].values
+label_array_test_last = label_array_test_last.reshape(label_array_test_last.shape[0],1).astype(np.float32)
+label_array_test_last.shape
+
+print(seq_array_test_last.shape)
+print(label_array_test_last.shape)
+
+# test metrics
+scores_test = model.evaluate(seq_array_test_last, label_array_test_last, verbose=2)
+print('Accurracy: {}'.format(scores_test[1]))
+
+# make predictions and compute confusion matrix
+y_pred_test = model.predict_classes(seq_array_test_last)
+y_true_test = label_array_test_last
+print('Confusion matrix\n- x-axis is true labels.\n- y-axis is predicted labels')
+cm = confusion_matrix(y_true_test, y_pred_test)
+cm
+
+# compute precision and recall
+precision_test = precision_score(y_true_test, y_pred_test)
+recall_test = recall_score(y_true_test, y_pred_test)
+f1_test = 2 * (precision_test * recall_test) / (precision_test + recall_test)
+print( 'Precision: ', precision_test, '\n', 'Recall: ', recall_test,'\n', 'F1-score:', f1_test )
+
+results_df = pd.DataFrame([[scores_test[1],precision_test,recall_test,f1_test],
+                          [0.94, 0.952381, 0.8, 0.869565]],
+                         columns = ['Accuracy', 'Precision', 'Recall', 'F1-score'],
+                         index = ['LSTM',
+                                 'Template Best Model'])
+results_df
